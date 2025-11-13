@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Upload Test</title>
+    <style>
+        body { font-family: Arial; margin: 40px; }
+        .success { color: green; }
+        .error { color: red; }
+        .preview { max-width: 300px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h2>Simple Image Upload Test</h2>
+    
+    <div>
+        <input type="file" id="imageInput" accept="image/*">
+        <br><br>
+        <button onclick="uploadWithFormData()">Upload with FormData</button>
+        <button onclick="uploadWithJSON()">Upload with JSON</button>
+    </div>
+    
+    <div id="result" style="margin: 20px 0;"></div>
+    <img id="preview" class="preview">
+
+    <script>
+        async function uploadWithFormData() {
+            const fileInput = document.getElementById('imageInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('fileName', file.name);
+            formData.append('userId', 'test-user');
+
+            await uploadFile(formData, 'FormData');
+        }
+
+        async function uploadWithJSON() {
+            const fileInput = document.getElementById('imageInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+
+            const base64 = await fileToBase64(file);
+            const jsonData = {
+                imageData: base64,
+                fileName: file.name,
+                userId: 'test-user'
+            };
+
+            await uploadFile(jsonData, 'JSON');
+        }
+
+        async function uploadFile(data, method) {
+            try {
+                showResult(`⏳ Uploading with ${method}...`, '');
+                
+                const options = {
+                    method: 'POST',
+                    headers: method === 'JSON' ? { 'Content-Type': 'application/json' } : {},
+                    body: method === 'JSON' ? JSON.stringify(data) : data
+                };
+
+                const response = await fetch('http://localhost:5001/upload-image', options);
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult(`✅ ${method} Upload Successful!`, 'success');
+                    document.getElementById('preview').src = result.imageUrl;
+                    console.log('Image URL:', result.imageUrl);
+                } else {
+                    showResult(`❌ ${method} Upload Failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ ${method} Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<p class="${type}">${message}</p>`;
+        }
+    </script>
+</body>
+</html>

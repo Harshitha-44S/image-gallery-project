@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Test</title>
+</head>
+<body>
+    <h2>Debug Upload Test</h2>
+    
+    <input type="file" id="imageInput">
+    <button onclick="testUpload()">Test Upload</button>
+    
+    <div id="result"></div>
+
+    <script>
+        async function testUpload() {
+            const fileInput = document.getElementById('imageInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+
+            try {
+                // Test 1: Simple JSON
+                const response = await fetch('http://localhost:5001/test-upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        test: 'hello', 
+                        fileName: file.name,
+                        fileSize: file.size 
+                    })
+                });
+                
+                const result = await response.json();
+                document.getElementById('result').innerHTML = 
+                    'Test 1 (JSON): ' + JSON.stringify(result);
+                    
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
