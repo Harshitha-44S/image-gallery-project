@@ -1,78 +1,88 @@
 # Image Storage and Retrieval on Cloud
 
-**Name:** HARSHITHA.S.  
-**Student ID:** 4MH23CA016 
-**Topic:** IMAGE STORAGE AND RETRIEVAL ON CLOUD 
-**Submission Date:** NOVEMBER 18, 2025 
-**GitHub Repository:**  https://github.com/Harshitha-44S/image-gallery-project 
+# Image Storage and Retrieval on Cloud
 
+**Name:** HARSHITHA.S.
+
+**Student ID:** 4MH23CA016
+
+**Topic:** IMAGE STORAGE AND RETRIEVAL ON CLOUD
+
+**Submission Date:** NOVEMBER 18, 2025
+
+**GitHub Repository:** https://github.com/Harshitha-44S/image-gallery-project
+---
 
 ## Table of Contents
-1. [Introduction](#introduction)
-2. [Objectives](#objectives)
-3. [Background & Theory](#background--theory)
-4. [System Architecture](#system-architecture)
-5. [Implementation](#implementation)
-6. [Results](#results)
-7. [Discussion](#discussion)
-8. [Conclusion](#conclusion)
-9. [References](#references)
+- [Introduction](#introduction)
+- [Objectives](#objectives)
+- [System Architecture](#system-architecture)
+- [Implementation](#implementation)
+  - [Frontend (React)](#frontend-react)
+  - [Backend (Node/Express)](#backend-nodeexpress)
+  - [Database (MongoDB)](#database-mongodb)
+- [Results](#results)
+- [Discussion & Technical Insights](#discussion--technical-insights)
+- [Limitations](#limitations)
+- [Future Enhancements](#future-enhancements)
+- [How to Run / Test](#how-to-run--test)
+- [References](#references)
+
+---
 
 ## Introduction
-Basically, this is a web app that helps you store, organize, and find digital pictures easily by using the cloud. Since we're dealing with tons of digital photos these days, old ways of storing them just aren't cutting it anymore when it comes to handling more stuff, saving money, and getting to your files. This project tackles those issues by building a new system. It uses React.js for what you see, Node.js for what happens behind the scenes, MongoDB to keep track of info about the images, and Backblaze B2 Cloud Storage to safely and affordably keep your pictures.
+
+Basically, this is a web app that helps you store, organize, and find digital pictures easily by using the cloud. Since we're dealing with tons of digital photos these days, old ways of storing them just aren't cutting it anymore when it comes to handling more stuff, saving money, and getting to your files. This project tackles those issues by building a new system. It uses React.js for the frontend, Node.js for the backend, MongoDB to keep track of info about the images, and Backblaze B2 Cloud Storage to safely and affordably keep your pictures.
 
 ## Objectives
+
 ### Primary Objectives
+
 - Make a user-friendly website where you can upload and manage pictures.
 - Build a secure system for handling and storing images.
-- Connect it to Backblaze B2 for storing lots of images.
+- Connect it to Backblaze B2 for storing large numbers of images.
 - Keep all the image details in a MongoDB database.
-- Make it easy to find and show the images.
+- Make it easy to find and display the images.
 
 ### Technical Objectives
-*   We need to make it possible to upload files and see how far along the upload is.
-*   The system should be able to handle common image types like JPEG, PNG, GIF, and WebP.
-*   Users should be able to see a preview of their images and any associated information.
-*   We'll build in ways to deal with problems and let users know what's happening.
-*   It's important to make sure that file access and the API connections are safe.
+
+- Provide upload progress feedback to the user.
+- Support common image types like JPEG, PNG, GIF, and WebP.
+- Show client-side previews and relevant metadata.
+- Implement server-side validation, error handling, and secure API connections.
 
 ## Background & Theory
+
 ### Cloud Storage Architecture
-Services like Backblaze B2 offer storage for data as objects, accessible through web-based APIs. This approach is built for the long haul and can grow as needed, often at a better price than older storage methods. Our setup works like this:
 
-*   The front part users see and interact with is a React.js app.
-*   The back part, a Node.js/Express.js API, handles the core operations.
-*   We're using MongoDB to keep track of image details and who owns them.
-*   Backblaze B2 is where the actual image files will be stored.
+Services like Backblaze B2 offer storage for data as objects, accessible through web-based APIs. This approach scales well and is often more cost-effective than traditional file systems. Our setup follows a common modern web architecture:
 
-### Key Technologies
-*   React.js: A popular JavaScript tool for creating interactive web pages.
-*   Node.js: A way to run JavaScript on the server.
-*   Express.js: A framework that makes building web APIs easier.
-*   MongoDB: A flexible database for storing data that doesn't fit neatly into tables.
-*   Backblaze B2: A cloud storage service that's compatible with Amazon S3.
+- The frontend is a React.js single-page application.
+- The backend is an Express.js API that handles uploads, metadata and business logic.
+- MongoDB stores image metadata and indexing information.
+- Backblaze B2 stores the actual image files.
 
 ## System Architecture
-┌─────────────────┐ HTTP Requests ┌──────────────────┐
-│ React.js │ ◄─────────────────► │ Node.js/ │
-│ Frontend │ │ Express.js │
-│ │ JSON Responses │ Backend API │
-└─────────────────┘ └─────────┬────────┘
-│
-┌───────┼───────┐
-│ │ │
-┌───────▼─┐ ┌───▼────┐ │
-│ MongoDB │ │Backblaze│ │
-│(Metadata)│ │ B2 │ │
-│ │ │(Images) │ │
-└─────────┘ └─────────┘ │
 
+High-level architecture:
+
+```
+React.js (frontend)
+    │
+    ▼
+Express API (backend)  <--->  MongoDB (metadata)
+    │
+    ▼
+Backblaze B2 (image storage)
+```
 
 ## Implementation
 
 ### Frontend Implementation (React.js)
-```jsx
-// Example: ImageUpload Component
+
+Example `ImageUpload` component:
+
+```javascript
 import React, { useState } from 'react';
 import axios from 'axios';
 
@@ -114,8 +124,23 @@ const ImageUpload = () => {
       )}
     </div>
   );
+};
 
-Backend Implementation (Node.js)
+export default ImageUpload;
+```
+
+### Backend Implementation (Node.js)
+
+server.js - Main server responsibilities:
+
+- Accept multipart uploads (via `multer`).
+- Validate files and enforce size/type limits.
+- Upload file bytes to Backblaze B2.
+- Save metadata in MongoDB and return references to the client.
+
+Example upload endpoint (sketch):
+
+```javascript
 // server.js - Main server file
 const express = require('express');
 const multer = require('multer');
@@ -192,9 +217,13 @@ app.get('/api/images/:id', async (req, res) => {
     res.status(404).json({ error: 'Image not found' });
   }
 });
+```
 
-Database Schema (MongoDB)
-// models/Image.js
+### Database Schema (MongoDB)
+
+`models/Image.js`:
+
+```javascript
 const mongoose = require('mongoose');
 
 const imageSchema = new mongoose.Schema({
@@ -223,73 +252,86 @@ const imageSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('Image', imageSchema);
+```
 
-Results
-###Functional Results
-Image Upload: It works perfectly, and you can see the progress.
-Metadata Storage: We're saving and getting data from MongoDB really smoothly.
-Cloud Integration: It's all set up with Backblaze B2 without any hitches.
-Image Retrieval: Getting and showing the saved pictures is super quick.
-User Interface: The frontend, built with React.js, is easy to use and looks good on any device.
+## Results
 
-##Discussion
-###Challenges Faced
-CORS Configuration: Cross-origin issues between frontend and backend
-Solution: Implemented proper CORS middleware in Express.js
-File Size Limitations: Handling large file uploads
-Solution: Configured Multer limits and implemented chunked uploads
-Backblaze Authentication: Managing secure API keys
-Solution: Used environment variables and secure credential storage
-Database Optimization: Efficient metadata querying
-Solution: Implemented indexing on frequently queried fields
+### Functional Results
 
-##Technical Insights
-React Hooks made managing state in our functional components a lot simpler. Using Async/Await really cleaned up how we handle asynchronous tasks. Error Boundaries helped us catch and manage frontend errors better. And environment variables made keeping our configurations secure much easier.
+- Image Upload: It works and shows progress.
+- Metadata Storage: Metadata saved and retrieved from MongoDB.
+- Cloud Integration: Backblaze B2 used for file storage.
+- Image Retrieval: Images can be downloaded and displayed.
+- User Interface: Frontend built with React.js is responsive.
 
-##Limitations
-Limited to image files (could extend to other file types)
-No user authentication system implemented
-Basic search functionality
-No image editing features
+## Discussion
 
-##Conclusion
-The Cloud-Based Image Storage and Retrieval System successfully demonstrates a modern approach to digital asset management using cloud technologies. The integration of React.js, Node.js, MongoDB, and Backblaze B2 provides a scalable, cost-effective solution for image storage needs.
+### Challenges Faced
 
-##Key Achievements
-Built a fully functional full-stack application
-Successfully integrated multiple technologies
-Implemented secure file upload and retrieval
-Created a responsive and user-friendly interface
+- **CORS Configuration:** Cross-origin issues between frontend and backend. Solution: Added CORS middleware in Express.
+- **File Size Limitations:** Handling large file uploads. Solution: Configured Multer limits and implemented chunked uploads.
+- **Backblaze Authentication:** Managing secure API keys. Solution: Used environment variables.
+- **Database Optimization:** Efficient metadata querying. Solution: Implemented indexing on frequently queried fields.
 
-##Future Enhancements
-Implement user authentication and authorization
-Add image editing and filtering capabilities
-Implement advanced search with AI-based tagging
-Add bulk operations and folder management
-Implement image compression and optimization
+## Technical Insights
 
-##References
-###Official Documentation
-React.js - https://reactjs.org/docs/getting-started.html
-Node.js - https://nodejs.org/en/docs/
-Express.js - https://expressjs.com/en/guide.html
-MongoDB - https://docs.mongodb.com/
-Backblaze B2 - https://www.backblaze.com/b2/docs/
+React Hooks helped manage state in functional components. Async/await improved readability for async flows. Error boundaries and environment variables improved stability and security.
 
-##In-Text citation
-###Background & Theory
+## Limitations
 
-### React Component Architecture
+- Limited to image files (can be extended to other types).
+- No user authentication implemented.
+- Basic search functionality only.
+- No image editing features.
+
+## Conclusion
+
+The Cloud-Based Image Storage and Retrieval System demonstrates a modern approach to digital asset management using React.js, Node.js, MongoDB, and Backblaze B2. It provides secure uploads, metadata persistence, and responsive UI.
+
+## Key Achievements
+
+- Built a full-stack application.
+- Integrated Backblaze B2 for storage.
+- Implemented secure file upload and metadata storage.
+
+## Future Enhancements
+
+- Implement user authentication and authorization.
+- Add image editing and filtering capabilities.
+- Implement advanced search with AI-based tagging.
+- Add bulk operations and folder management.
+- Implement image compression and optimization.
+
+## References
+
+### Official Documentation
+
+- React.js - https://reactjs.org/docs/getting-started.html
+- Node.js - https://nodejs.org/en/docs/
+- Express.js - https://expressjs.com/en/guide.html
+- MongoDB - https://docs.mongodb.com/
+- Backblaze B2 - https://www.backblaze.com/b2/docs/
+
+## In-Text citation
+
+### Background & Theory
+
+#### React Component Architecture
+
 React follows a component-based architecture that promotes reusability and maintainability [1]. The use of hooks like `useState` and `useEffect` simplifies state management in functional components [2].
 
-### Cloud Storage Integration
+#### Cloud Storage Integration
+
 Backblaze B2 provides S3-compatible API endpoints for seamless integration with Node.js applications [3]. The RESTful architecture follows standard HTTP methods for CRUD operations [4].
 
-### Database Design
+#### Database Design
+
 MongoDB's document-based model offers flexibility for storing image metadata with varying structures [5]. This is particularly useful for applications that may evolve over time [6].
 
-##Code Contribution
+## Code Contribution
+
 ### Backend Configuration
+
 The Backblaze B2 integration follows the official SDK documentation [3]:
 
 ```javascript
@@ -298,11 +340,12 @@ const b2 = new BackblazeB2({
     applicationKeyId: process.env.B2_KEY_ID,
     applicationKey: process.env.B2_APPLICATION_KEY
 });
+```
 
 ## Bibliography
-## References
 
 ### Primary Technologies
+
 [1] **React Documentation** (2024). *Getting Started*. Facebook Open Source. Retrieved from: https://reactjs.org/docs/getting-started.html
 
 [2] **Node.js Documentation** (2024). *Node.js v18 Guide*. OpenJS Foundation. Retrieved from: https://nodejs.org/docs/latest-v18.x/api/
@@ -312,12 +355,14 @@ const b2 = new BackblazeB2({
 [4] **MongoDB University** (2024). *MongoDB Basics*. MongoDB, Inc. Retrieved from: https://learn.mongodb.com/
 
 ### Implementation Guides
+
 [5] **Express.js Routing** (2024). *Writing Middleware*. OpenJS Foundation. Retrieved from: https://expressjs.com/en/guide/writing-middleware.html
 
 
 ## Testing & Results
 
 ### Test Summary
+
 | Component | Test Cases | Pass Rate | Status |
 |-----------|------------|-----------|--------|
 | Frontend (React) | 15 | 100% | ✅ PASS |
@@ -329,6 +374,7 @@ const b2 = new BackblazeB2({
 ### Key Test Results
 
 #### ✅ Successful Tests
+
 - **Image Upload**: All supported formats (JPEG, PNG, GIF, WebP) upload correctly
 - **File Validation**: Non-image files properly rejected with error messages
 - **Metadata Storage**: Image data accurately stored and retrieved from MongoDB
@@ -353,20 +399,23 @@ const b2 = new BackblazeB2({
 - **Result**: Stable memory usage under load
 
 ### Performance Metrics
+
 | Operation | Expected | Actual | Status |
 |-----------|----------|--------|--------|
-| Image Upload (5MB) | < 5s | 2.3s |  PASS |
-| Image Retrieval | < 2s | 1.2s |  PASS |
-| API Response | < 500ms | 350ms |  PASS |
-| Concurrent Users | 10+ | 20+ |  EXCEEDED |
+| Image Upload (5MB) | < 5s | 2.3s | PASS |
+| Image Retrieval | < 2s | 1.2s | PASS |
+| API Response | < 500ms | 350ms | PASS |
+| Concurrent Users | 10+ | 20+ | EXCEEDED |
 
 ### Security Tests
+
 - File type validation prevents malicious uploads
 - Input sanitization blocks XSS attacks
 - Secure API endpoints with proper error handling
 - CORS configuration for safe cross-origin requests
 
 ### Browser Compatibility
+
 - Chrome 118+
 - Firefox 115+
 - Safari 16+
@@ -379,10 +428,10 @@ const b2 = new BackblazeB2({
 ### Technical Challenges & Solutions
 
 #### **Backblaze B2 Integration Complexity**
-**Initial Understanding**: Assumed cloud storage integration would be similar to local file systems  
-**Reality**: Required understanding of S3-compatible APIs, bucket policies, and authentication flows  
+**Initial Understanding**: Assumed cloud storage integration would be similar to local file systems
+**Reality**: Required understanding of S3-compatible APIs, bucket policies, and authentication flows
 
-**Resolution**: 
+**Resolution**:
 - Studied Backblaze documentation for 3+ hours
 - Implemented comprehensive error handling for network failures
 - Created wrapper functions to simplify B2 operations
@@ -392,7 +441,7 @@ const b2 = new BackblazeB2({
 
 **Solution Evolution**:
 1. **First Attempt**: Individual useState hooks - became unmanageable
-2. **Second Attempt**: useReducer - complexity remained high  
+2. **Second Attempt**: useReducer - complexity remained high
 3. **Final Solution**: Custom hook `useFileUpload` with React context
 
 **Breakthrough Code**:
@@ -410,11 +459,11 @@ const useFileUpload = () => {
   
   return { uploads, updateProgress };
 };
+```
 
 ### MongoDB Schema Design
 Initial Approach: Rigid schema based on immediate requirements
 Problem: Couldn't extend metadata for new features
-*Problem**: Rigid initial schema limited feature expansion
 ```javascript
 // INITIAL (Too rigid)
 const imageSchema = new mongoose.Schema({
@@ -639,10 +688,4 @@ const improvementPlan = {
 
 ##Conclusion
 This project transformed theoretical knowledge into practical expertise. The biggest lesson: architecture decisions made early have long-lasting consequences. Learning to anticipate scale, error conditions, and user experience trade-offs has been invaluable. Each challenge overcome represented not just a bug fixed, but a fundamental concept mastered.
-
-
-
-
-
-
 
