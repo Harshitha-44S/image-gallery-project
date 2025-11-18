@@ -491,101 +491,104 @@ const imageSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, index: true }
 });
 
-Solution: Hybrid schema with required fields + flexible metadata object
+**Solution:** Hybrid schema with required fields + flexible metadata object.
 
-###Conceptual Breakthroughs
-From Monolithic to Microservices Thinking
-Initial: Single Express app handling everything
-Realization: File processing blocked API responses
-// BEFORE: Blocking architecture
+### Conceptual breakthroughs
+
+#### From monolith to microservices
+
+Initial: Single Express app handling everything. Realization: file processing blocked API responses.
+
+Before (blocking):
+
+```javascript
 app.post('/upload', upload.single('image'), async (req, res) => {
   const image = await processImage(req.file); // Blocks response
   await uploadToBackblaze(image);
   res.json({ success: true }); // User waits for entire process
 });
+```
 
-// AFTER: Microservices approach with Redis queue
+After (background jobs with a queue):
+
+```javascript
 app.post('/upload', upload.single('image'), async (req, res) => {
   // Immediate response
   const jobId = await queue.add('process-image', { file: req.file });
   res.json({ jobId, status: 'processing' }); // Fast response
-  
-  // Background processing
-  queue.process('process-image', async (job) => {
-    const image = await processImage(job.data.file);
-    await uploadToBackblaze(image);
-  });
 });
-Architectural Shift:
-Separated file processing into queue-based background jobs
-Implemented Redis for job management
-Impact: API response times improved by 60% during heavy upload periods
 
-##Understanding Cloud Economics:
-Discovery: Initial implementation was uploading original files directly to B2
-Cost Analysis: Large files increased storage costs and download charges
-// Client-side compression before upload
+// Background worker
+queue.process('process-image', async (job) => {
+  const image = await processImage(job.data.file);
+  await uploadToBackblaze(image);
+});
+```
+
+- Architectural shift: separated file processing into queue-based background jobs.
+- Implemented Redis (or similar) for job management.
+- Impact: API response times improved significantly under load.
+
+### Understanding cloud economics
+
+Discovery: uploading original, high-resolution files increases storage & egress costs.
+
+Client-side compression (example):
+
+```javascript
 const compressImage = (file, quality = 0.8) => {
   return new Promise((resolve) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
-    
+
     img.onload = () => {
       canvas.width = img.width;
       canvas.height = img.height;
       ctx.drawImage(img, 0, 0);
-      
+
       canvas.toBlob((blob) => {
         resolve(new File([blob], file.name, { type: 'image/jpeg' }));
       }, 'image/jpeg', quality);
     };
-    
+
     img.src = URL.createObjectURL(file);
   });
 };
-Optimization:
-Implemented client-side image compression before upload
-Added configurable quality settings
-Result: Reduced average file size by 45% without noticeable quality loss
+```
 
-##Personal Growth Reflections
-Problem-Solving Evolution
-Before: Would immediately search for solutions when stuck
-After: Learned to systematically debug by:
-Reproducing the issue consistently
-Isolating the problem component
-Reading error messages and documentation thoroughly
-Testing hypotheses with minimal reproducible examples
-// Systematic debugging approach learned:
+Optimization: perform client-side compression and configurable quality settings to reduce average file size and storage costs.
+
+---
+
+## Personal growth reflections
+
+### Problem-solving evolution
+
+- Reproduce issues consistently.
+- Isolate the failing component.
+- Read error messages and documentation carefully.
+- Test hypotheses with minimal reproducible examples.
+
+Example debug helper (concept):
+
+```javascript
 const debugSystematically = (problem) => {
-  // 1. Reproduce consistently
   const reproducibleCase = createMinimalReproduction(problem);
-  
-  // 2. Isolate component
   const isolatedComponent = testInIsolation(reproducibleCase);
-  
-  // 3. Analyze errors
   const errorPatterns = analyzeErrorMessages(isolatedComponent);
-  
-  // 4. Test hypotheses
   return testHypotheses(errorPatterns);
 };
+```
 
-###Quality Mindset Development
-Early Approach: "Make it work" mentality with basic error handling
-Current Approach: Built comprehensive error boundaries, loading states, and user feedback at every level
-Example Growth:
-Then: Basic try-catch blocks around API calls
-Now: Implemented retry mechanisms, fallback strategies, and detailed error logging
-// THEN: Basic error handling
-try {
-  await uploadImage(file);
-} catch (error) {
-  console.error(error);
-}
+### Quality mindset development
 
-// NOW: Comprehensive error management
+- Early: "Make it work" with basic try/catch.
+- Now: retries, fallbacks, detailed logging and user feedback.
+
+Example: upload with retry
+
+```javascript
 const uploadWithRetry = async (file, maxRetries = 3) => {
   try {
     const result = await uploadImage(file);
@@ -593,99 +596,60 @@ const uploadWithRetry = async (file, maxRetries = 3) => {
     return result;
   } catch (error) {
     if (maxRetries > 0) {
-      showWarning(`Retrying upload... ${maxRetries} attempts left`);
       return uploadWithRetry(file, maxRetries - 1);
-    } else {
-      showError('Upload failed after multiple attempts');
-      logError(error, { file, userId });
-      throw new UploadError('Final upload failure', error);
     }
+    throw new UploadError('Final upload failure', error);
   }
 };
+```
 
-###Most Valuable Technical Learnings
-React Performance: Learned to optimize re-renders with proper dependency arrays and memoization
-Async Operations: Mastered Promise handling, error propagation, and race condition prevention
-Security Awareness: Implemented comprehensive file validation beyond basic type checking
-Database Optimization: Understood indexing strategies and query optimization techniques
-// React performance optimization
-const OptimizedImageList = React.memo(({ images }) => {
-  // Proper dependency arrays
-  const processedImages = useMemo(() => 
-    images.map(processImage), [images]);
-  
-  // Stable callbacks
-  const handleSelect = useCallback((imageId) => {
-    setSelectedImage(imageId);
-  }, []);
-  
-  return <ImageGrid images={processedImages} onSelect={handleSelect} />;
-});
+### Most valuable technical learnings
 
-// Async operation mastery
-const raceConditionFreeUpload = async (files) => {
-  const uploadPromises = files.map(file => 
-    uploadImage(file).then(result => ({ file, result }))
-  );
-  
-  // Process in controlled batches
-  const batchSize = 3;
+- React performance optimizations (memoization, stable callbacks).
+- Async patterns and safe concurrency (batching/uploads in controlled batches).
+- Security: input validation and sanitization.
+
+```javascript
+// Example: controlled batch processing
+const raceConditionFreeUpload = async (files, batchSize = 3) => {
   const results = [];
-  
-  for (let i = 0; i < uploadPromises.length; i += batchSize) {
-    const batch = uploadPromises.slice(i, i + batchSize);
+  for (let i = 0; i < files.length; i += batchSize) {
+    const batch = files.slice(i, i + batchSize).map(uploadImage);
     const batchResults = await Promise.allSettled(batch);
     results.push(...batchResults);
   }
-  
   return results;
 };
+```
 
-##Soft Skills Development
-Documentation: Learned to document while coding, not as afterthought
-Debugging Patience: 6-hour CORS issue taught systematic problem-solving
-Architecture Thinking: Early decisions have long-lasting consequences
+---
 
-##Future Improvements
-Enhance integration test coverage
-Implement better performance monitoring
-Improve accessibility features
-Add image CDN for faster delivery
-const improvementPlan = {
-  testing: {
-    priority: 'high',
-    actions: [
-      'Increase integration test coverage to 90%',
-      'Implement visual regression testing',
-      'Add performance benchmark tests'
-    ]
-  },
-  monitoring: {
-    priority: 'medium', 
-    actions: [
-      'Implement Application Performance Monitoring (APM)',
-      'Set up real user monitoring (RUM)',
-      'Create automated alert system'
-    ]
-  },
-  accessibility: {
-    priority: 'medium',
-    actions: [
-      'Add full screen reader support',
-      'Implement keyboard navigation',
-      'Ensure WCAG 2.1 AA compliance'
-    ]
-  },
-  performance: {
-    priority: 'low',
-    actions: [
-      'Implement image CDN for global delivery',
-      'Add progressive image loading',
-      'Optimize Core Web Vitals'
-    ]
-  }
-};
+## Soft skills development
 
-##Conclusion
-This project transformed theoretical knowledge into practical expertise. The biggest lesson: architecture decisions made early have long-lasting consequences. Learning to anticipate scale, error conditions, and user experience trade-offs has been invaluable. Each challenge overcome represented not just a bug fixed, but a fundamental concept mastered.
+- Documentation: write as you code.
+- Debugging patience: systematic investigation pays off.
+- Architecture thinking: early decisions affect long-term maintainability.
+
+## Future improvements
+
+- Enhance integration test coverage.
+- Add performance monitoring and observability.
+- Improve accessibility (WCAG) and mobile UX.
+- Add CDN for global delivery and progressive image loading.
+
+Example improvement plan (conceptual):
+
+```json
+{
+  "testing": { "priority": "high", "actions": ["increase integration tests"] },
+  "monitoring": { "priority": "medium", "actions": ["add APM"] }
+}
+```
+
+---
+
+## Conclusion
+
+This project transformed theoretical knowledge into practical expertise. The biggest lesson: architecture decisions made early have long-lasting consequences. Learning to anticipate scale, error conditions, and user experience trade-offs has been invaluable.
+
 
