@@ -1,4 +1,3 @@
-# Image Storage and Retrieval on Cloud
 
 # Image Storage and Retrieval on Cloud
 
