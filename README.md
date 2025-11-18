@@ -114,9 +114,8 @@ const ImageUpload = () => {
       )}
     </div>
   );
-};
 
-### Backend Implementation (Node.js)
+Backend Implementation (Node.js)
 // server.js - Main server file
 const express = require('express');
 const multer = require('multer');
@@ -194,7 +193,7 @@ app.get('/api/images/:id', async (req, res) => {
   }
 });
 
-###Database Schema (MongoDB)
+Database Schema (MongoDB)
 // models/Image.js
 const mongoose = require('mongoose');
 
@@ -225,8 +224,8 @@ const imageSchema = new mongoose.Schema({
 
 module.exports = mongoose.model('Image', imageSchema);
 
-##Results
-###Functional Results
+Results
+Functional Results
 Image Upload: It works perfectly, and you can see the progress.
 Metadata Storage: We're saving and getting data from MongoDB really smoothly.
 Cloud Integration: It's all set up with Backblaze B2 without any hitches.
